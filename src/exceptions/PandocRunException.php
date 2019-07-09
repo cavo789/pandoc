@@ -7,18 +7,17 @@ namespace Exceptions;
 use Exceptions\PandocException;
 use Throwable;
 
-class PandocFolderNotExists extends PandocException
+class PandocRunException extends PandocException
 {
-    /*
+    /**
      * Constructor.
      *
-     * @param string    $message
-     * @param int       $code
-     * @param Throwable $previous
+     * @param string     $message
+     * @param int        $code
+     * @param \Throwable $previous
      */
     public function __construct(
-        string $message = 'Please give an existing folder name to the ' .
-        'setOutputFolder() method.',
+        string $message,
         int $code = 501,
         Throwable $previous = null
     ) {

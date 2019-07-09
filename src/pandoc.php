@@ -8,13 +8,17 @@ declare(strict_types = 1);
  * Date     : July 2019
  *
  * Description
- * Interface to the "pandoc" utility;
- * Convert a markdown content to a DOCX, ODT, PDF, TXT, … file.
+ * Wrapper for pandoc
+ * Convert a markdown content to multiple formats like DOCX, EPUB,
+ * ODT, PDF, TXT, ...
+ * See the list of supported formats on
+ * https://pandoc.org/MANUAL.html#general-options
  *
- * Notes    :
+ * Notes:
  *
  * - pandoc should first be installed globally
- * - List of supported types is defined in pandoc.json
+ * - List of supported types is defined in pandoc.json, add yours
+ * (as soon as supported by pandoc)
  *
  * @see https://pandoc.org/installing.html
  */
@@ -26,9 +30,11 @@ use Exceptions\PandocFileNotFound;
 use Exceptions\PandocFileNotSpecified;
 use Exceptions\PandocFileProtected;
 use Exceptions\PandocFolderNotExists;
+use Exceptions\PandocFolderNotWritable;
 use Exceptions\PandocNoMarkdownContent;
 use Exceptions\PandocNotInstalled;
 use Exceptions\PandocOutputTypeNotSupported;
+use Exceptions\PandocRunException;
 use Exceptions\PandocSettingsNoPandocRootElement;
 use Exceptions\PandocSettingsNotDefined;
 use Exceptions\PandocSettingsNotFound;
@@ -146,6 +152,31 @@ class Pandoc
     }
 
     /**
+     * Remove temporary file.
+     */
+    public function __destruct()
+    {
+        if (\file_exists($this->sourceFile)) {
+            unlink($this->sourceFile);
+        }
+    }
+
+    /**
+     * Return the version of pandoc.
+     *
+     * @return string
+     */
+    public function getVersion(): string
+    {
+        // Make sure pandoc is installed and in the PATH
+        $this->isInstalled();
+
+        exec('pandoc --version', $output);
+
+        return trim(str_replace('pandoc', '', $output[0]));
+    }
+
+    /**
      * Define the file with the settings.
      *
      * @param string $filename
@@ -206,7 +237,6 @@ class Pandoc
      *
      * @return void
      *
-     *
      * @phan-suppress PhanUnreferencedPublicMethod
      */
     public function setMarkdown(string $content)
@@ -229,7 +259,6 @@ class Pandoc
      *
      * @return void
      *
-     *
      * @phan-suppress PhanUnreferencedPublicMethod
      */
     public function setOutputType(string $type)
@@ -238,7 +267,7 @@ class Pandoc
             $this->lastError = self::ERR_TYPE_NOT_SUPPORTED;
 
             throw new PandocOutputTypeNotSupported('The output type ' .
-                '<strong>' . $type . '</strong> isn\'t supported');
+                $type . ' isn\'t supported');
         }
 
         $this->outputType = $type;
@@ -252,7 +281,6 @@ class Pandoc
      * @throws PandocFolderNotExists
      *
      * @return void
-     *
      *
      * @phan-suppress PhanUnreferencedPublicMethod
      */
@@ -268,8 +296,11 @@ class Pandoc
 
         if (!is_dir($this->outputFolder)) {
             throw new PandocFolderNotExists('The output folder ' .
-                '<strong>' . $this->outputFolder . '</strong> ' .
-                'doesn\'t exists');
+                $this->outputFolder . ' doesn\'t exists');
+        }
+
+        if (!is_writable($this->outputFolder)) {
+            throw new PandocFolderNotWritable($this->outputFolder);
         }
     }
 
@@ -450,23 +481,30 @@ class Pandoc
             }
         }
 
-        $output  = '';
+        $output    = '';
+        $return    = 0;
 
-        exec('start cmd /c ' . $this->makeCommandLine(), $output);
+        exec(escapeshellcmd($this->makeCommandLine()), $output, $return);
 
-        try {
-            unlink($this->sourceFile);
-        } catch (\Exception $e) {
-            throw new PandocFileProtected('File ' .
-                $this->sourceFile . 'can\'t be removed from ' .
-                'the filesystem');
+        if (0 === $return) {
+            try {
+                unlink($this->sourceFile);
+            } catch (\Exception $e) {
+                throw new PandocFileProtected($this->sourceFile);
+            }
+
+            if (!is_file($this->outputFile)) {
+                $this->lastError = self::ERR_FILE_NOT_GENERATED;
+            }
+
+            return is_file($this->outputFile);
+        } else {
+            $msg = sprintf('Pandoc could not convert successfully, ' .
+                'error code: %d. Tried to run the following ' .
+                'command: %s', $return, $this->makeCommandLine());
+
+            throw new PandocRunException($msg);
         }
-
-        if (!is_file($this->outputFile)) {
-            $this->lastError = self::ERR_FILE_NOT_GENERATED;
-        }
-
-        return is_file($this->outputFile);
     }
 
     /**
@@ -530,13 +568,13 @@ class Pandoc
      */
     private function makeMDFilestring(): bool
     {
-        if ('pdf' == $this->outputType) {
-            \file_put_contents($this->sourceFile, $this->markdown);
-        } else {
+        //if ('txt' !== $this->outputType) {
+        \file_put_contents($this->sourceFile, $this->markdown);
+        /*} else {
             $id = \fopen($this->sourceFile, 'wb');
             \fwrite($id, utf8_encode($this->markdown));
             \fclose($id);
-        }
+        }*/
 
         if (!is_file($this->sourceFile)) {
             throw new PandocFileCreationError($this->sourceFile);

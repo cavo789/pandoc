@@ -7,21 +7,22 @@ namespace Exceptions;
 use Exceptions\PandocException;
 use Throwable;
 
-class PandocFolderNotExists extends PandocException
+class PandocFolderNotWritable extends PandocException
 {
-    /*
+    /**
      * Constructor.
      *
-     * @param string    $message
-     * @param int       $code
-     * @param Throwable $previous
+     * @param string     $foldername
+     * @param int        $code
+     * @param \Throwable $previous
      */
     public function __construct(
-        string $message = 'Please give an existing folder name to the ' .
-        'setOutputFolder() method.',
+        string $foldername,
         int $code = 501,
         Throwable $previous = null
     ) {
+        $message = 'Unable to write to the directory ' .
+            $foldername;
         parent::__construct($message, $code, $previous);
     }
 }

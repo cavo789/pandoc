@@ -7,7 +7,7 @@ namespace Exceptions;
 use Exceptions\PandocException;
 use Throwable;
 
-class PandocSettingsNotDefined extends PandocException
+class PandocSettingsEmpty extends PandocException
 {
     /*
      * Constructor.
