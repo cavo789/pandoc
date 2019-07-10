@@ -1,14 +1,29 @@
 {
     "name": "avonture/pandoc",
     "description": "PHP class that encapsulates pandoc in order to convert a text in markdown format to doc/odt/pdf/txt/...",
+    "homepage": "https://github.com/cavo789/pandoc",
     "type": "library",
     "license": "MIT",
     "authors": [
         {
-            "name": "Christophe",
-            "email": "cavo789@yahoo.com"
+            "name": "Christophe Avonture",
+            "email": "christophe@avonture.be"
         }
     ],
+    "keywords": [
+        "php",
+        "pandoc",
+        "convert",
+        "markdown",
+        "md2docx",
+        "md2pdf",
+        "md2txt",
+        "md2odt"
+    ],
+    "minimum-stability": "dev",
+    "require": {
+        "php": ">=7.1.0"
+    },
     "autoload": {
         "classmap": [
             "src/"
