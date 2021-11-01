@@ -1,6 +1,6 @@
-![banner](image/banner.png)
-
 # Pandoc
+
+![banner](./banner.svg)
 
 > PHP class that encapsulates pandoc in order to convert a text in markdown format to doc/odt/pdf/txt/…
 
